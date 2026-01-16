@@ -57,6 +57,20 @@ interface VoicesConfig {
 // Default voice settings
 const DEFAULT_VOICE_SETTINGS = { stability: 0.5, similarity_boost: 0.75 };
 
+// Voice notification queue system - prevents overlapping speech
+interface QueuedNotification {
+  title: string;
+  message: string;
+  voiceEnabled: boolean;
+  voiceId: string | null;
+  resolve: () => void;
+  reject: (error: Error) => void;
+}
+
+const notificationQueue: QueuedNotification[] = [];
+let isProcessingQueue = false;
+const PAUSE_BETWEEN_NOTIFICATIONS = 400; // Brief breath pause in ms
+
 // Load voices configuration from CORE skill (canonical source)
 let voicesConfig: VoicesConfig | null = null;
 try {
@@ -250,13 +264,53 @@ function spawnSafe(command: string, args: string[]): Promise<void> {
   });
 }
 
-// Send macOS notification with voice
-async function sendNotification(
+// Sleep utility for pause between notifications
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Process notifications from queue one at a time
+async function processQueue(): Promise<void> {
+  if (isProcessingQueue || notificationQueue.length === 0) {
+    return;
+  }
+
+  isProcessingQueue = true;
+  console.log(`📋 Queue: Processing ${notificationQueue.length} notification(s)`);
+
+  while (notificationQueue.length > 0) {
+    const notification = notificationQueue.shift()!;
+
+    try {
+      await processNotificationImmediate(
+        notification.title,
+        notification.message,
+        notification.voiceEnabled,
+        notification.voiceId
+      );
+      notification.resolve();
+    } catch (error) {
+      notification.reject(error as Error);
+    }
+
+    // Add brief pause between notifications if more in queue
+    if (notificationQueue.length > 0) {
+      console.log(`⏸️  Brief pause before next notification...`);
+      await sleep(PAUSE_BETWEEN_NOTIFICATIONS);
+    }
+  }
+
+  isProcessingQueue = false;
+  console.log(`✅ Queue: All notifications processed`);
+}
+
+// Internal function to process a single notification immediately
+async function processNotificationImmediate(
   title: string,
   message: string,
-  voiceEnabled = true,
-  voiceId: string | null = null
-) {
+  voiceEnabled: boolean,
+  voiceId: string | null
+): Promise<void> {
   // Validate and sanitize inputs
   const titleValidation = validateInput(title);
   const messageValidation = validateInput(message);
@@ -303,11 +357,36 @@ async function sendNotification(
   try {
     const escapedTitle = escapeForAppleScript(safeTitle);
     const escapedMessage = escapeForAppleScript(safeMessage);
-    const script = `display notification "${escapedMessage}" with title "${escapedTitle}" sound name ""`;
+    const script = `display notification "${escapedMessage}" with title "${escapedTitle}"`;
     await spawnSafe('/usr/bin/osascript', ['-e', script]);
   } catch (error) {
     console.error("Notification display error:", error);
   }
+}
+
+// Send macOS notification with voice - queued to prevent overlapping
+async function sendNotification(
+  title: string,
+  message: string,
+  voiceEnabled = true,
+  voiceId: string | null = null
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Add to queue
+    notificationQueue.push({
+      title,
+      message,
+      voiceEnabled,
+      voiceId,
+      resolve,
+      reject
+    });
+
+    console.log(`📥 Queued notification: "${title}" (queue size: ${notificationQueue.length})`);
+
+    // Start processing if not already running
+    processQueue();
+  });
 }
 
 // Rate limiting
