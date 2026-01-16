@@ -1,206 +1,275 @@
----
-name: PAI Voice System
-pack-id: danielmiessler-pai-voice-system-v1.0.0
-version: 1.0.0
-author: danielmiessler
-description: Voice notification system with ElevenLabs TTS, prosody enhancement for natural speech, and agent personality-driven voice delivery
-type: feature
-purpose-type: [notifications, accessibility, automation]
-platform: macos
-dependencies:
-  - pai-hook-system (required) - Hooks trigger voice notifications
-  - pai-core-install (required) - Skills, identity, and response format drive voice output
-keywords: [voice, tts, elevenlabs, notifications, prosody, speech, agents, personalities, accessibility]
----
+# Voice Server
 
-<p align="center">
-  <img src="../icons/pai-voice-system-v2.png" alt="PAI Voice System" width="256">
-</p>
+A voice notification server for the Personal AI Infrastructure (PAI) system that provides text-to-speech notifications using ElevenLabs API or macOS's built-in `say` command as fallback.
 
-# PAI Voice System (pai-voice-system)
+> **Quick Start**: See [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup guide.
 
-> Voice notification system with natural speech synthesis and personality-driven delivery
+## 🎯 Features
 
-> **Installation:** This pack is designed for AI-assisted installation. Give this directory to your AI and ask it to install using the wizard in `INSTALL.md`. The installation dynamically adapts to your system state. See [AI-First Installation Philosophy](../../README.md#ai-first-installation-philosophy) for details.
+- **ElevenLabs Integration**: High-quality AI voices for notifications
+- **Voice Queuing**: Notifications play sequentially with brief pauses - no overlapping speech
+- **Multiple Voice Support**: Different voices for different AI agents
+- **macOS Service**: Runs automatically in the background
+- **Menu Bar Indicator**: Visual status indicator in macOS menu bar
+- **Simple HTTP API**: Easy integration with any tool or script
+- **Rate Limiting**: 10 requests per 60 seconds to protect API quota
 
----
+## 📋 Prerequisites
 
-## Platform Requirements
+- macOS (tested on macOS 11+)
+- [Bun](https://bun.sh) runtime installed
+- ElevenLabs API key (optional, for AI voices)
 
-| Platform | Status | Notes |
-|----------|--------|-------|
-| **macOS** | ✅ Fully Supported | Uses `afplay` (built-in) for audio playback |
-| **Linux** | ⚠️ Experimental | Requires audio player modification |
-| **Windows** | ❌ Not Supported | No current implementation |
+## 🚀 Quick Start
 
----
+### 1. Install Bun (if not already installed)
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
 
-## What This Pack Provides
+### 2. Configure API Key (Optional but Recommended)
+Add your ElevenLabs API key to `~/.env`:
+```bash
+echo "ELEVENLABS_API_KEY=your_api_key_here" >> ~/.env
+echo "ELEVENLABS_VOICE_ID=s3TPKV1kjDlVtZbl4Ksh" >> ~/.env
+```
 
-- **Spoken Notifications**: Hear task completions via text-to-speech
-- **ElevenLabs TTS**: High-quality voice synthesis via ElevenLabs API
-- **Prosody Enhancement**: Natural speech patterns with 13 emotional markers
-- **Agent Personalities**: Different voices for different agent types
-- **Intelligent Cleaning**: Strips code blocks and artifacts for clean speech
-- **Graceful Degradation**: Works silently when voice server is offline
+> Get your free API key at [elevenlabs.io](https://elevenlabs.io) (10,000 characters/month free)
 
-## Voice Server
+### 3. Install Voice Server
+```bash
+cd ~/.claude/voice-server
+./install.sh
+```
 
-The voice server runs locally on port 8888 and:
-- Receives notification requests via HTTP POST
-- Generates speech using ElevenLabs API
-- Plays audio using system audio player
-- Supports emotional markers for prosody variation
+This will:
+- Install dependencies
+- Create a macOS LaunchAgent for auto-start
+- Start the voice server on port 8888
+- Verify the installation
+- Optionally install menu bar indicator (requires SwiftBar/BitBar)
 
-### Endpoints
+## 🛠️ Service Management
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/notify` | POST | Full notification with voice/emotion support |
-| `/pai` | POST | Simple notification with default voice |
-| `/health` | GET | Health check and configuration status |
+### Start Server
+```bash
+./start.sh
+# or
+launchctl load ~/Library/LaunchAgents/com.pai.voice-server.plist
+```
 
-### Example Request
+### Stop Server
+```bash
+./stop.sh
+# or
+launchctl unload ~/Library/LaunchAgents/com.pai.voice-server.plist
+```
 
+### Restart Server
+```bash
+./restart.sh
+```
+
+### Check Status
+```bash
+./status.sh
+```
+
+### Uninstall
+```bash
+./uninstall.sh
+```
+This will stop the service and remove the LaunchAgent.
+
+## 📡 API Usage
+
+### Send a Voice Notification
 ```bash
 curl -X POST http://localhost:8888/notify \
   -H "Content-Type: application/json" \
-  -d '{"message": "Task completed successfully", "voice_enabled": true}'
+  -d '{
+    "message": "Task completed successfully",
+    "voice_id": "s3TPKV1kjDlVtZbl4Ksh",
+    "voice_enabled": true
+  }'
 ```
 
-## Architecture Overview
+### Parameters
+- `message` (required): The text to speak
+- `voice_id` (optional): ElevenLabs voice ID to use
+- `voice_enabled` (optional): Whether to speak the notification (default: true)
+- `title` (optional): Notification title (default: "PAI Notification")
 
-```
-┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐
-│   Stop Hook     │ ───► │  Voice Server    │ ───► │  ElevenLabs     │
-│ (extracts msg)  │      │  (localhost:8888)│      │  TTS API        │
-└─────────────────┘      └──────────────────┘      └─────────────────┘
-        │                         │
-        │                         ▼
-        │                ┌─────────────────┐
-        │                │  Audio Player   │
-        │                │  (afplay)       │
-        │                └─────────────────┘
-        │
-        ▼
-┌─────────────────┐
-│ Response Format │
-│ 🗣️ [AI_NAME]:  │
-└─────────────────┘
-```
-
-## Response Format Integration
-
-The voice system reads from the response format defined in `pai-core-install`:
-
-```
-🗣️ PAI: [12 words max - spoken aloud by voice server]
+### Available Voice IDs
+```javascript
+// PAI System Agents
+Kai:                     s3TPKV1kjDlVtZbl4Ksh  // Main assistant
+Perplexity-Researcher:   AXdMgz6evoL7OPd7eU12  // Perplexity research agent
+Claude-Researcher:       AXdMgz6evoL7OPd7eU12  // Claude research agent
+Gemini-Researcher:       iLVmqjzCGGvqtMCk6vVQ  // Gemini research agent
+Engineer:                iLVmqjzCGGvqtMCk6vVQ  // Engineering agent (Marcus Webb)
+Designer:                ZF6FPAbjXT4488VcRRnw  // Design agent
+Architect:               muZKMsIDGYtIkjjiUS82  // Architecture agent
+Pentester:               xvHLFjaUEpx4BOf7EiDd  // Security agent
+Artist:                  ZF6FPAbjXT4488VcRRnw  // Artist agent
+Writer:                  gfRt6Z3Z8aTbpLfexQ7N  // Content agent
 ```
 
-The hook extracts this line, enhances it with prosody markers, and sends it to the voice server.
+## 🔊 Voice Queuing
 
-## The 5-Layer Prosody Enhancement Pipeline
+When multiple notifications arrive simultaneously, they are queued and played one at a time with a brief pause (400ms) between each. This prevents overlapping speech and ensures each notification is clearly audible.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    PROSODY ENHANCEMENT PIPELINE                   │
-├──────────────────────────────────────────────────────────────────┤
-│  1. TEXT EXTRACTION         Raw completion message                │
-│  2. CONTEXT ANALYSIS        Detect emotional patterns             │
-│  3. PERSONALITY PROSODY     Agent-specific speech patterns        │
-│  4. SPEECH CLEANING         Remove non-spoken artifacts           │
-│  5. VOICE DELIVERY          Personality → Voice ID routing        │
-└──────────────────────────────────────────────────────────────────┘
-```
+**Queue Behavior:**
+- Notifications are processed in FIFO order (first in, first out)
+- Each HTTP request waits until its notification completes before returning
+- Brief "breath" pause between consecutive notifications
+- Queue status is logged to the server console
 
-## What's Included
+**Configuration:**
+The pause duration can be adjusted by modifying `PAUSE_BETWEEN_NOTIFICATIONS` in `server.ts` (default: 400ms).
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Voice server | `src/voice/server.ts` | HTTP server for TTS requests |
-| Server management | `src/voice/manage.sh` | Start/stop/restart server |
-| Voice stop hook | `src/hooks/stop-hook-voice.ts` | Main agent voice notification |
-| Subagent voice hook | `src/hooks/subagent-stop-hook-voice.ts` | Subagent voice notification |
-| Prosody enhancer | `src/hooks/lib/prosody-enhancer.ts` | Add emotion/pauses to speech |
-| Voice personalities | `voice-personalities.json` | Agent voice configurations |
+## 🖥️ Menu Bar Indicator
 
-**Summary:**
-- **Files created:** 6
-- **Hooks registered:** 2 (Stop, SubagentStop)
-- **Dependencies:** pai-hook-system (required), pai-core-install (required)
-- **TTS API key:** ElevenLabs API key required
+The voice server includes an optional menu bar indicator that shows the server status.
 
-## Emotional Detection
+### Installing the Menu Bar
 
-The prosody enhancer detects emotional context from message patterns:
-
-| Priority | Emotion | Triggers | Marker |
-|----------|---------|----------|--------|
-| 1 | urgent | "critical", "broken", "failing" | [🚨 urgent] |
-| 2 | debugging | "bug", "error", "tracking" | [🐛 debugging] |
-| 3 | insight | "wait", "aha", "I see" | [💡 insight] |
-| 4 | celebration | "finally", "phew", "we did it" | [🎉 celebration] |
-| 5 | excited | "breakthrough", "discovered" | [💥 excited] |
-| 6 | investigating | "analyzing", "examining" | [🔍 investigating] |
-| 7 | progress | "phase complete", "moving to" | [📈 progress] |
-| 8 | success | "completed", "fixed", "deployed" | [✨ success] |
-| 9 | caution | "warning", "careful", "partial" | [⚠️ caution] |
-
-These markers are embedded in the message and the voice server adjusts stability/similarity_boost parameters accordingly.
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `ELEVENLABS_API_KEY` | Yes | - | Your ElevenLabs API key |
-| `ELEVENLABS_VOICE_ID` | Yes | - | Default voice ID for TTS |
-| `VOICE_SERVER_PORT` | No | 8888 | Voice server port |
-| `VOICE_SERVER_URL` | No | http://localhost:8888 | Voice server URL (for hooks) |
-| `PAI_DIR` | No | ~/.config/pai | PAI installation directory |
-
-## Agent Voice Mapping
-
-Configure multiple voices in `voice-personalities.json` for multi-agent conversations:
-
-```json
-{
-  "voices": {
-    "PAI": {
-      "voice_id": "YOUR_VOICE_ID",
-      "stability": 0.5,
-      "similarity_boost": 0.5,
-      "description": "Default PAI voice"
-    },
-    "Engineer": {
-      "voice_id": "ENGINEER_VOICE_ID",
-      "stability": 0.72,
-      "similarity_boost": 0.65,
-      "description": "Technical, precise"
-    }
-  }
-}
+1. **Install SwiftBar** (recommended) or BitBar:
+```bash
+brew install --cask swiftbar
+# OR
+brew install --cask bitbar
 ```
 
-## Credits
+2. **Run the menu bar installer**:
+```bash
+cd ~/.claude/voice-server/menubar
+./install-menubar.sh
+```
 
-- **Author:** Daniel Miessler
-- **Origin:** Extracted from production Kai system (2024-2026)
-- **License:** MIT
+### Menu Bar Features
+- **Visual Status**: 🎙️ (running) or 🎙️⚫ (stopped)
+- **Quick Controls**: Start/Stop/Restart server from menu
+- **Status Info**: Shows voice type (ElevenLabs/macOS Say)
+- **Quick Test**: Test voice with one click
+- **View Logs**: Access server logs directly
 
-## Works Well With
+### Manual Installation
+If you prefer manual installation:
+1. Copy `menubar/pai-voice.5s.sh` to your SwiftBar/BitBar plugins folder
+2. Make it executable: `chmod +x pai-voice.5s.sh`
+3. Refresh SwiftBar/BitBar
 
-- **pai-hook-system** (required) - Hooks trigger voice notifications
-- **pai-core-install** (required) - Response format provides 🗣️ line
-- **pai-history-system** - Complementary functionality
+## 🔧 Configuration
 
-## Changelog
+### Environment Variables
+Create or edit `~/.env` in your home directory:
 
-### 1.0.0 - 2026-01-08
-- Initial release with complete voice server implementation
-- ElevenLabs TTS voice server (`src/voice/server.ts`)
-- Server management script (`src/voice/manage.sh`)
-- Main agent stop hook (`src/hooks/stop-hook-voice.ts`)
-- Subagent stop hook (`src/hooks/subagent-stop-hook-voice.ts`)
-- Prosody enhancer with 13 emotional markers
-- Voice personalities configuration
-- Integrates with pai-core-install response format (`🗣️ [AI_NAME]:`)
+```bash
+# Required for ElevenLabs voices (optional)
+ELEVENLABS_API_KEY=your_api_key_here
+
+# Default voice ID (optional, defaults to Kai)
+ELEVENLABS_VOICE_ID=s3TPKV1kjDlVtZbl4Ksh
+
+# Server port (optional, defaults to 8888)
+PORT=8888
+```
+
+### Finding Your Voice ID
+1. Go to [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+2. Select a voice you like
+3. Click "Use" and copy the Voice ID
+4. Update `ELEVENLABS_VOICE_ID` in your `~/.env`
+
+## 🐛 Troubleshooting
+
+### Server won't start
+```bash
+# Check if port 8888 is already in use
+lsof -i :8888
+
+# Kill any existing process
+lsof -ti :8888 | xargs kill -9
+
+# Restart the server
+./restart.sh
+```
+
+### No voice output
+```bash
+# Check if ElevenLabs key is configured
+grep ELEVENLABS_API_KEY ~/.env
+
+# Test with fallback (macOS say)
+curl -X POST http://localhost:8888/notify \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Testing voice output"}'
+
+# Check server logs
+tail -f ~/Library/Logs/pai-voice-server.log
+```
+
+### Service not auto-starting
+```bash
+# Check LaunchAgent status
+launchctl list | grep pai.voice
+
+# Reload LaunchAgent
+launchctl unload ~/Library/LaunchAgents/com.pai.voice-server.plist
+launchctl load ~/Library/LaunchAgents/com.pai.voice-server.plist
+
+# Check for errors
+tail -f ~/Library/Logs/pai-voice-server.log
+```
+
+## 📁 File Structure
+```
+~/.claude/voice-server/
+├── server.ts              # Main server code
+├── install.sh             # Installation script
+├── start.sh              # Start server
+├── stop.sh               # Stop server
+├── restart.sh            # Restart server
+├── status.sh             # Check server status
+├── uninstall.sh          # Uninstall service
+├── README.md             # This file
+└── menubar/
+    ├── pai-voice.5s.sh   # Menu bar status script
+    └── install-menubar.sh # Menu bar installer
+
+~/Library/LaunchAgents/
+└── com.pai.voice-server.plist  # macOS service definition
+
+~/Library/Logs/
+└── pai-voice-server.log        # Server logs
+```
+
+## 🔐 Security Notes
+
+- **No hardcoded API keys**: All sensitive data is read from `~/.env`
+- **Local only**: Server only listens on localhost (127.0.0.1)
+- **User-specific**: Each user maintains their own API keys
+- **Safe for public repos**: No sensitive data in the codebase
+
+## 🤝 Integration with PAI System
+
+This voice server integrates with the PAI (Personal AI Infrastructure) system to provide voice notifications when:
+- Tasks are completed
+- Agents finish their work
+- Important events occur
+- User notifications are needed
+
+The PAI hooks automatically send notifications to this server when configured.
+
+## 📝 License
+
+Part of the PAI (Personal AI Infrastructure) system.
+
+## 🆘 Support
+
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review logs at `~/Library/Logs/pai-voice-server.log`
+3. Ensure your ElevenLabs API key is valid
+4. Try the fallback mode (without API key) to isolate issues
