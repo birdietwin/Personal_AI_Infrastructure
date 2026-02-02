@@ -521,10 +521,10 @@ Run these commands to understand your current system:
 
 ```bash
 # 1. Check if PAI_DIR is set
-echo "PAI_DIR: ${PAI_DIR:-'NOT SET - will use ~/.config/pai'}"
+echo "PAI_DIR: ${PAI_DIR:-'NOT SET - will use ~/.claude'}"
 
 # 2. Check for existing PAI directory
-PAI_CHECK="${PAI_DIR:-$HOME/.config/pai}"
+PAI_CHECK="${PAI_DIR:-$HOME/.claude}"
 if [ -d "$PAI_CHECK" ]; then
   echo "⚠️  PAI directory EXISTS at: $PAI_CHECK"
   echo "Contents:"
@@ -565,7 +565,7 @@ echo "  PAI_DIR: ${PAI_DIR:-'NOT SET'}"
 #### Step 0.2: Verify Dependencies
 
 ```bash
-PAI_CHECK="${PAI_DIR:-$HOME/.config/pai}"
+PAI_CHECK="${PAI_DIR:-$HOME/.claude}"
 
 # Check for required packs (customize for your pack)
 # Example: Check if hook system is installed
@@ -598,7 +598,7 @@ If conflicts were detected, create a backup before proceeding:
 # Create timestamped backup
 BACKUP_DIR="$HOME/.pai-backup/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP_DIR"
-PAI_CHECK="${PAI_DIR:-$HOME/.config/pai}"
+PAI_CHECK="${PAI_DIR:-$HOME/.claude}"
 
 # Backup files this pack will modify
 # TODO: Add pack-specific backup commands
@@ -970,14 +970,14 @@ IMPORTANT: Always document BOTH approaches for environment variables:
 ```bash
 # $PAI_DIR/.env
 DA="MyAI"
-PAI_DIR="$HOME/.config/pai"
+PAI_DIR="$HOME/.claude"
 TIME_ZONE="America/Los_Angeles"
 ```
 
 **Option 2: Shell profile** (for manual installation):
 ```bash
 # Add to ~/.zshrc or ~/.bashrc
-export PAI_DIR="$HOME/.config/pai"
+export PAI_DIR="$HOME/.claude"
 export TIME_ZONE="America/Los_Angeles"
 export DA="MyAI"
 ```

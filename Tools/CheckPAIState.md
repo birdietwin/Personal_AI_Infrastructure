@@ -37,7 +37,7 @@ Check for PAI infrastructure in common locations:
 ```bash
 # Check for PAI directory
 ls -la ~/.pai/ 2>/dev/null || echo "No ~/.pai/ directory"
-ls -la ~/.config/pai/ 2>/dev/null || echo "No ~/.config/pai/ directory"
+ls -la ~/.claude/ 2>/dev/null || echo "No ~/.claude/ directory"
 
 # Check for Claude Code integration
 ls -la ~/.claude/settings.json 2>/dev/null || echo "No Claude Code settings"

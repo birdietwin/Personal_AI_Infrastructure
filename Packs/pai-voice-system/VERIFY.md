@@ -1,181 +1,168 @@
 # PAI Voice System - Verification Checklist
 
-Run through this checklist to verify your installation is complete and working.
+## Mandatory Completion Checklist
+
+**IMPORTANT:** All items must be verified before considering this pack installed.
+
+### Directory Structure
+
+- [ ] `$PAI_DIR/hooks/lib/` directory exists
+- [ ] `$PAI_DIR/voice-server/` directory exists
+
+### Core Files
+
+- [ ] `$PAI_DIR/hooks/lib/prosody-enhancer.ts` exists
+- [ ] `$PAI_DIR/hooks/stop-hook-voice.ts` exists
+- [ ] `$PAI_DIR/hooks/subagent-stop-hook-voice.ts` exists
+- [ ] `$PAI_DIR/voice-server/server.ts` exists
+- [ ] `$PAI_DIR/voice-server/manage.sh` exists
+
+### Configuration
+
+- [ ] `ELEVENLABS_API_KEY` set in `~/.env`
+- [ ] `ELEVENLABS_VOICE_ID` set in `~/.env`
+- [ ] Voice hooks registered in `~/.claude/settings.json`
+
+### Services
+
+- [ ] Voice server running on port 8888
 
 ---
 
-## Required Checks
+## Functional Tests
 
-### 1. Server Files Exist
+### Test 1: Verify Directory Structure
 
 ```bash
-ls -la ~/.claude/VoiceServer/server.ts
-ls -la ~/.claude/VoiceServer/voices.json
-ls -la ~/.claude/VoiceServer/*.sh
+PAI_CHECK="${PAI_DIR:-$HOME/.claude}"
+
+ls -la $PAI_CHECK/hooks/lib/
+# Expected: prosody-enhancer.ts
+
+ls -la $PAI_CHECK/voice-server/
+# Expected: server.ts, manage.sh
+
+ls -la $PAI_CHECK/hooks/
+# Expected: stop-hook-voice.ts, subagent-stop-hook-voice.ts
 ```
 
-**Expected:** All files present with appropriate permissions
-
-- [ ] `server.ts` exists
-- [ ] `voices.json` exists
-- [ ] Scripts (`start.sh`, `stop.sh`, `restart.sh`, `status.sh`) exist and are executable
-
----
-
-### 2. Service is Running
+### Test 2: Check Voice Server Health
 
 ```bash
-launchctl list | grep pai.voice
+curl http://localhost:8888/health
+# Expected: {"status":"healthy","port":8888,"voice_system":"ElevenLabs",...}
 ```
 
-**Expected:** Shows service with a PID (not `-`)
-
-```
-12345   0   com.pai.voice-server
-```
-
-- [ ] Service is listed
-- [ ] PID is a number (not `-`)
-
----
-
-### 3. Server Responds to Health Check
-
-```bash
-curl -s http://localhost:8888/health
-```
-
-**Expected:**
-```json
-{
-  "status": "healthy",
-  "port": 8888,
-  "voice_system": "ElevenLabs",
-  "default_voice_id": "...",
-  "api_key_configured": true
-}
-```
-
-- [ ] Status is "healthy"
-- [ ] Port is 8888
-- [ ] `api_key_configured` is `true` (or `false` if using fallback)
-
----
-
-### 4. Voice Output Works
+### Test 3: Test Voice Notification
 
 ```bash
 curl -X POST http://localhost:8888/notify \
   -H "Content-Type: application/json" \
-  -d '{"message": "Verification test successful"}'
+  -d '{"title":"Test","message":"Hello from PAI voice system","voice_enabled":true}'
+# Expected: Hear "Hello from PAI voice system" spoken aloud
 ```
 
-**Expected:** You should HEAR the message spoken aloud
-
-- [ ] Audio played successfully
-- [ ] macOS notification appeared
-
----
-
-### 5. Port is Bound Correctly
+### Test 4: Test Emotional Markers
 
 ```bash
-lsof -i :8888
+curl -X POST http://localhost:8888/notify \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","message":"[✨ success] Fixed the authentication bug!","voice_enabled":true}'
+# Expected: Success tone with adjusted voice parameters
 ```
 
-**Expected:** Shows bun process listening
-
-```
-COMMAND   PID USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
-bun     12345 user   11u  IPv4 0x...   0t0  TCP localhost:8888 (LISTEN)
-```
-
-- [ ] Port 8888 is bound
-- [ ] Process is `bun`
-
----
-
-## Optional Checks
-
-### 6. ElevenLabs API Key (If Using AI Voices)
+### Test 5: Check Hook Registration
 
 ```bash
-grep ELEVENLABS_API_KEY ~/.env
+grep -A5 "stop-hook-voice" ~/.claude/settings.json
+# Expected: Shows hook configuration
 ```
 
-**Expected:** Key is present and not placeholder
-
-- [ ] API key exists in `~/.env`
-- [ ] API key is not "your_api_key_here"
-
----
-
-### 7. Menu Bar Indicator (If Installed)
-
-Look in your macOS menu bar for the microphone icon.
-
-**Expected:**
-- Colored microphone icon (server running)
-- Gray microphone icon (server stopped)
-
-- [ ] Menu bar icon visible
-- [ ] Clicking shows status menu
-
----
-
-### 8. Logs are Being Written
+### Test 6: Test Management Script
 
 ```bash
-tail -5 ~/Library/Logs/pai-voice-server.log
+$PAI_DIR/voice-server/manage.sh status
+# Expected: Shows server running status
 ```
 
-**Expected:** Recent log entries
+---
 
-- [ ] Log file exists
-- [ ] Recent timestamps in logs
+## Integration Tests
+
+### Test A: Main Agent Voice
+
+In a Claude Code session:
+1. Complete a task that produces `🗣️ PAI:` output
+2. Listen for voice announcement
+3. Should hear the message spoken
+
+### Test B: Subagent Voice
+
+In a Claude Code session:
+1. Run a Task that spawns a subagent
+2. Wait for subagent to complete
+3. Should hear voice notification
+
+### Test C: Graceful Degradation
+
+```bash
+# Stop the voice server
+$PAI_DIR/voice-server/manage.sh stop
+
+# In Claude Code, complete a task
+# Should complete without errors (silent, no crash)
+
+# Restart voice server
+$PAI_DIR/voice-server/manage.sh start
+```
 
 ---
 
 ## Quick Verification Script
 
-Run this all-in-one check:
-
 ```bash
-echo "=== PAI Voice System Verification ==="
+#!/bin/bash
+PAI_CHECK="${PAI_DIR:-$HOME/.claude}"
+
+echo "=== PAI Voice System v1.0.0 Verification ==="
 echo ""
 
-# Check 1: Files
-echo "1. Checking files..."
-[ -f ~/.claude/VoiceServer/server.ts ] && echo "   [PASS] server.ts" || echo "   [FAIL] server.ts missing"
-[ -f ~/.claude/VoiceServer/voices.json ] && echo "   [PASS] voices.json" || echo "   [FAIL] voices.json missing"
-[ -x ~/.claude/VoiceServer/start.sh ] && echo "   [PASS] start.sh executable" || echo "   [FAIL] start.sh not executable"
+# Check files
+echo "📁 Files:"
+for file in "hooks/lib/prosody-enhancer.ts" "hooks/stop-hook-voice.ts" "hooks/subagent-stop-hook-voice.ts" "voice-server/server.ts" "voice-server/manage.sh"; do
+  if [ -f "$PAI_CHECK/$file" ]; then
+    echo "  ✓ $file"
+  else
+    echo "  ❌ $file MISSING"
+  fi
+done
 
-# Check 2: Service
 echo ""
-echo "2. Checking service..."
-if launchctl list 2>/dev/null | grep -q "com.pai.voice-server"; then
-  echo "   [PASS] Service loaded"
+
+# Check API key
+echo "🔑 Configuration:"
+if [ -f "$HOME/.env" ] && grep -q "ELEVENLABS_API_KEY" "$HOME/.env"; then
+  echo "  ✓ ELEVENLABS_API_KEY configured"
 else
-  echo "   [FAIL] Service not loaded"
+  echo "  ❌ ELEVENLABS_API_KEY not configured"
 fi
 
-# Check 3: Health
-echo ""
-echo "3. Checking health endpoint..."
-HEALTH=$(curl -s http://localhost:8888/health 2>/dev/null)
-if echo "$HEALTH" | grep -q '"status":"healthy"'; then
-  echo "   [PASS] Server healthy"
+if [ -f "$HOME/.env" ] && grep -q "ELEVENLABS_VOICE_ID" "$HOME/.env"; then
+  echo "  ✓ ELEVENLABS_VOICE_ID configured"
 else
-  echo "   [FAIL] Server not responding"
+  echo "  ❌ ELEVENLABS_VOICE_ID not configured"
 fi
 
-# Check 4: Port
 echo ""
-echo "4. Checking port 8888..."
-if lsof -i :8888 > /dev/null 2>&1; then
-  echo "   [PASS] Port 8888 in use"
+
+# Check voice server
+echo "🔊 Voice Server:"
+if curl -s http://localhost:8888/health > /dev/null 2>&1; then
+  echo "  ✓ Voice server running on port 8888"
+  curl -s http://localhost:8888/health | head -c 100
+  echo ""
 else
-  echo "   [FAIL] Port 8888 not bound"
+  echo "  ❌ Voice server NOT running"
 fi
 
 echo ""
@@ -184,34 +171,13 @@ echo "=== Verification Complete ==="
 
 ---
 
-## Troubleshooting Failed Checks
-
-| Check | If Failed | Solution |
-|-------|-----------|----------|
-| Files missing | Pack not copied | Re-run `cp -r src/VoiceServer/* ~/.claude/VoiceServer/` |
-| Service not loaded | LaunchAgent issue | Run `./install.sh` again |
-| Server unhealthy | Crashed or not started | Run `./restart.sh` |
-| Port not bound | Another process using 8888 | Kill with `lsof -ti :8888 | xargs kill -9` |
-| No audio | API key issue or volume | Check `~/.env` and system volume |
-
----
-
 ## Success Criteria
 
-**All required checks must pass:**
+Installation is complete when:
 
-- [ ] Server files exist
-- [ ] Service is running
-- [ ] Health check returns healthy
-- [ ] Voice output works (you hear audio)
-- [ ] Port 8888 is bound
-
-**Installation is complete when you can run:**
-
-```bash
-curl -X POST http://localhost:8888/notify \
-  -H "Content-Type: application/json" \
-  -d '{"message": "PAI Voice System ready"}'
-```
-
-...and **hear the message spoken aloud**.
+1. ✅ All directory structure items exist
+2. ✅ All core files are present
+3. ✅ ElevenLabs API key and voice ID are configured
+4. ✅ Voice server responds to health check
+5. ✅ Test notification produces audible output
+6. ✅ Hooks are registered in settings.json

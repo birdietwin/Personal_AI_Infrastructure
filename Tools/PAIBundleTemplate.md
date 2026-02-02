@@ -130,8 +130,8 @@ Include:
 
 **Start by asking your principal these questions:**
 
-1. **Where should PAI be installed?** (default: `~/.config/pai`)
-2. **What would you like to name your DA assistant?** (e.g., Kai, Atlas, Nova)
+1. **Where should PAI be installed?** (default: `~/.claude`)
+2. **What would you like to name your AI assistant?** (e.g., Kai, Atlas, Nova)
 3. **What's your timezone?** (e.g., America/Los_Angeles)
 4. [Add bundle-specific questions here]
 
@@ -334,8 +334,8 @@ bun run install.ts
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PAI_DIR` | `~/.config/pai` | Where PAI stores files |
-| `DA` | `PAI` | Your DA's name |
+| `PAI_DIR` | `~/.claude` | Where PAI stores files |
+| `DA` | `PAI` | Your AI assistant's name |
 | [Other variables] | | |
 
 ### Manual Installation (Alternative)
@@ -344,13 +344,13 @@ If you prefer not to use the wizard:
 
 ```bash
 # 1. Set up environment
-export PAI_DIR="$HOME/.config/pai"
-export DA="YourDAName"
+export PAI_DIR="$HOME/.claude"
+export DA="YourAIName"
 
 # 2. Create directories
 mkdir -p $PAI_DIR/{hooks,history,skills,tools}
 
-# 3. Install each pack in order (give to your DA)
+# 3. Install each pack in order (give to your AI)
 ```
 
 ### Pack Installation Sequence
@@ -360,11 +360,11 @@ mkdir -p $PAI_DIR/{hooks,history,skills,tools}
 | 1 | Pack Name | Give AI: `Packs/pack-name.md` | `[verification command]` |
 | 2 | Another Pack | Give AI: `Packs/another-pack.md` | `[verification command]` |
 
-**For each pack, tell your DA:**
+**For each pack, tell your AI:**
 ```
 Install this pack using:
 - PAI_DIR: [your configured path]
-- DA: [your DA name]
+- DA: [your AI name]
 ```
 
 ---

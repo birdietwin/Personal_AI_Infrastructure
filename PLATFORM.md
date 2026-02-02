@@ -109,7 +109,7 @@ This document tracks all platform-specific code and dependencies across PAI, pro
     - **Priority:** Low - both platforms supported
 
 16. 🔮 ~/Library/Logs for logging
-    - **Status:** Already uses `~/.config/pai` on Linux
+    - **Status:** Already uses `~/.claude` on Linux
     - **Priority:** Low - platform-appropriate paths used
 
 ---

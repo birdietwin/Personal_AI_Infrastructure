@@ -233,7 +233,7 @@ Give the pack directory to your DA agent:
 
 ```
 Install the pai-hook-system pack from PAI/Packs/pai-hook-system/.
-Use PAI_DIR="~/.config/pai" and DA="MyAI".
+Use PAI_DIR="~/.claude" and DA="MyAI".
 ```
 
 Your DA will:

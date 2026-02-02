@@ -17,10 +17,9 @@ import { parseArgs } from "util";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 
-const HOME = process.env.HOME!;
-const CLAUDE_DIR = join(HOME, ".claude");
-const STATE_DIR = join(CLAUDE_DIR, "MEMORY/State");
-const ISC_PATH = join(CLAUDE_DIR, "MEMORY/Work/current-isc.json");
+const PAI_DIR = process.env.PAI_DIR || join(process.env.HOME!, ".claude");
+const STATE_DIR = join(PAI_DIR, "MEMORY/State");
+const ISC_PATH = join(PAI_DIR, "MEMORY/Work/current-isc.json");
 const ALGORITHM_STATE_PATH = join(STATE_DIR, "algorithm-state.json");
 
 // ANSI color codes - Tokyo Night / LCARS palette
