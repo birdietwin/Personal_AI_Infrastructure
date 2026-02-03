@@ -51,10 +51,16 @@ export interface VoicePersonality {
   playfulness: number;
 }
 
+export interface VoiceServerConfig {
+  enabled: boolean;
+  serverUrl: string;
+}
+
 export interface Identity {
   name: string;
   fullName: string;
   displayName: string;
+  role?: string;
   voiceId: string;
   color: string;
   voice?: VoiceProsody;
@@ -65,10 +71,13 @@ export interface Principal {
   name: string;
   pronunciation: string;
   timezone: string;
+  socialHandles?: Record<string, string>;
 }
 
 export interface Settings {
-  daidentity?: Partial<Identity>;
+  identity?: Partial<Identity>;
+  daidentity?: Partial<Identity>; // backward compat (pre-v2.5)
+  voice?: Partial<VoiceServerConfig>;
   principal?: Partial<Principal>;
   env?: Record<string, string>;
   [key: string]: unknown;
@@ -99,22 +108,24 @@ function loadSettings(): Settings {
 
 /**
  * Get DA (Digital Assistant) identity from settings.json
+ * Checks `identity` first (v2.5+), falls back to `daidentity` (pre-v2.5)
  */
 export function getIdentity(): Identity {
   const settings = loadSettings();
 
-  // Prefer settings.daidentity, fall back to env.DA for backward compat
-  const daidentity = settings.daidentity || {};
+  // Prefer settings.identity (v2.5+), fall back to settings.daidentity (pre-v2.5)
+  const identitySection = settings.identity || settings.daidentity || {};
   const envDA = settings.env?.DA;
 
   return {
-    name: daidentity.name || envDA || DEFAULT_IDENTITY.name,
-    fullName: daidentity.fullName || daidentity.name || envDA || DEFAULT_IDENTITY.fullName,
-    displayName: daidentity.displayName || daidentity.name || envDA || DEFAULT_IDENTITY.displayName,
-    voiceId: daidentity.voiceId || DEFAULT_IDENTITY.voiceId,
-    color: daidentity.color || DEFAULT_IDENTITY.color,
-    voice: (daidentity as any).voice as VoiceProsody | undefined,
-    personality: (daidentity as any).personality as VoicePersonality | undefined,
+    name: identitySection.name || envDA || DEFAULT_IDENTITY.name,
+    fullName: identitySection.fullName || identitySection.name || envDA || DEFAULT_IDENTITY.fullName,
+    displayName: identitySection.displayName || identitySection.name || envDA || DEFAULT_IDENTITY.displayName,
+    role: identitySection.role,
+    voiceId: identitySection.voiceId || DEFAULT_IDENTITY.voiceId,
+    color: identitySection.color || DEFAULT_IDENTITY.color,
+    voice: (identitySection as any).voice as VoiceProsody | undefined,
+    personality: (identitySection as any).personality as VoicePersonality | undefined,
   };
 }
 
@@ -132,6 +143,20 @@ export function getPrincipal(): Principal {
     name: principal.name || envPrincipal || DEFAULT_PRINCIPAL.name,
     pronunciation: principal.pronunciation || DEFAULT_PRINCIPAL.pronunciation,
     timezone: principal.timezone || DEFAULT_PRINCIPAL.timezone,
+    socialHandles: (principal as any).socialHandles,
+  };
+}
+
+/**
+ * Get voice server configuration
+ */
+export function getVoiceServerConfig(): VoiceServerConfig {
+  const settings = loadSettings();
+  const voice = settings.voice || {};
+
+  return {
+    enabled: voice.enabled ?? false,
+    serverUrl: voice.serverUrl || 'http://localhost:8888',
   };
 }
 

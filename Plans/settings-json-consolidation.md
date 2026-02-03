@@ -185,6 +185,10 @@ Keep the file but change its purpose:
 
 ## Status
 
-- [ ] Phase 1: Add settings.json structure
-- [ ] Phase 2: Update hooks with fallback
-- [ ] Phase 3: Remove markdown parsing
+- [x] Phase 1: Add settings.json structure
+- [x] Phase 2: Update hooks with fallback
+- [x] Phase 3: Remove markdown parsing
+
+### Completed (v2.5 — 2026-02-03)
+
+All three phases are complete. The `identity` key (renamed from `daidentity`) is the canonical location in settings.json. All hooks read via `lib/identity.ts` which checks `identity` first and falls back to `daidentity` for backward compatibility. Markdown regex parsing has been fully removed. A top-level `voice` section was added for server config, and the `principal` section was enhanced with `pronunciation` and `socialHandles` fields.

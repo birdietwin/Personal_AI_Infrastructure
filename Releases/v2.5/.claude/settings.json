@@ -13,10 +13,11 @@
     "skills/PAI/USER/AISTEERINGRULES.md",
     "skills/PAI/USER/DAIDENTITY.md"
   ],
-  "daidentity": {
+  "identity": {
     "name": "PAI",
     "fullName": "PAI - Personal AI Infrastructure",
     "displayName": "PAI",
+    "role": "Personal AI Assistant",
     "color": "#3B82F6",
     "voiceId": "21m00Tcm4TlvDq8ikWAM",
     "voice": {
@@ -29,9 +30,15 @@
     },
     "startupCatchphrase": "PAI here, ready to go."
   },
+  "voice": {
+    "enabled": true,
+    "serverUrl": "http://localhost:8888"
+  },
   "principal": {
     "name": "User",
-    "timezone": "America/Los_Angeles"
+    "pronunciation": "",
+    "timezone": "America/Los_Angeles",
+    "socialHandles": {}
   },
   "pai": {
     "repoUrl": "github.com/danielmiessler/PAI",
@@ -246,8 +253,9 @@
     "_overview": "SETTINGS.JSON - Central configuration for PAI v2.5. Replace __INSTALL_WILL_SET_THIS__ placeholders with your paths.",
     "_sections": {
       "contextFiles": "Files loaded at session start. Defaults: SKILL.md, AISTEERINGRULES (SYSTEM+USER), DAIDENTITY. Customize to load additional context.",
-      "daidentity": "AI identity (name, voice). Edit directly to customize.",
-      "principal": "Your identity. Edit name and timezone directly.",
+      "identity": "AI identity (name, role, voice prosody). Edit directly to customize. Renamed from 'daidentity' in v2.5.",
+      "voice": "Voice server configuration (enabled, serverUrl). Prosody settings stay under identity.voice.",
+      "principal": "Your identity. Edit name, pronunciation, timezone, and socialHandles.",
       "permissions": "Pre-configured for security and usability.",
       "hooks": "Hook configuration for lifecycle events."
     },
